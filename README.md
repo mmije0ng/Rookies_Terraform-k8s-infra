@@ -32,6 +32,110 @@ AWS
           +-- RDS MySQL
 ```
 
+## Current Deployment Architecture
+
+```text
+Users
+  |
+  | HTTP/HTTPS
+  v
+AWS Load Balancer
+  |
+  v
+Kubernetes Service / Ingress
+  |
+  +-- Frontend Pod
+  |     |
+  |     +-- calls backend API through Kubernetes Service or Ingress route
+  |
+  +-- Backend Pod
+        |
+        +-- MySQL 3306 -> RDS MySQL in private subnets
+        +-- S3 API     -> S3 bucket using IRSA IAM role
+
+Container Image Flow
+
+Developer / CI
+  |
+  | docker build / push
+  v
+ECR
+  |
+  | image pull
+  v
+EKS Node Group
+```
+
+```mermaid
+flowchart TB
+    user[Users] -->|HTTP/HTTPS| lb[AWS Load Balancer]
+    lb --> svc[Kubernetes Service / Ingress]
+    svc --> fe[Frontend Pod]
+    svc --> be[Backend Pod]
+
+    fe -->|API request| be
+    be -->|MySQL 3306| rds[(RDS MySQL)]
+    be -->|S3 API via IRSA| s3[(S3 Bucket)]
+
+    ci[Developer / CI] -->|docker build / push| ecr[(ECR)]
+    ecr -->|image pull| node[EKS Node Group]
+    node --> fe
+    node --> be
+
+    subgraph aws[AWS]
+        subgraph vpc[VPC 10.0.0.0/16]
+            subgraph public[Public Subnets 10.0.1.0/24, 10.0.2.0/24]
+                lb
+                nat[NAT Gateway]
+                igw[Internet Gateway]
+            end
+
+            subgraph private[Private Subnets 10.0.10.0/24, 10.0.20.0/24]
+                node
+                fe
+                be
+                rds
+            end
+        end
+
+        ecr
+        s3
+    end
+
+    private -->|outbound internet| nat
+    public --> igw
+```
+
+### AWS Network Layout
+
+| Layer | Resource | Purpose |
+| --- | --- | --- |
+| VPC | `10.0.0.0/16` | 전체 AWS 네트워크 경계 |
+| Public subnet | `10.0.1.0/24`, `10.0.2.0/24` | Internet Gateway, NAT Gateway, public Load Balancer 배치 |
+| Private subnet | `10.0.10.0/24`, `10.0.20.0/24` | EKS node group, RDS 배치 |
+| Internet Gateway | `aws_internet_gateway.main` | public subnet의 인터넷 inbound/outbound 경로 |
+| NAT Gateway | `aws_nat_gateway.main` | private subnet의 outbound 인터넷 경로 |
+
+### EKS Runtime Layout
+
+| Component | Location | Public IP | Notes |
+| --- | --- | --- | --- |
+| EKS control plane | AWS managed | No direct app access | `kubectl`이 사용하는 관리용 API endpoint |
+| EKS worker nodes | Private subnets | No | 애플리케이션 Pod 실행 |
+| Frontend Pod | EKS worker node | No | Service 또는 Ingress 뒤에서 노출 |
+| Backend Pod | EKS worker node | No | RDS, S3와 통신 |
+| RDS MySQL | Private subnets | No | private subnet CIDR에서만 3306 허용 |
+| S3 bucket | AWS regional service | N/A | backend가 IRSA role로 접근 |
+
+사용자 브라우저는 EKS API endpoint로 접속하지 않습니다. 실제 배포 URL은 Kubernetes `Service` 또는 `Ingress`가 생성한 AWS Load Balancer 주소입니다.
+
+```powershell
+kubectl get svc -A
+kubectl get ingress -A
+```
+
+`TYPE=LoadBalancer`인 Service의 `EXTERNAL-IP` 또는 Ingress의 `ADDRESS`가 프론트엔드/백엔드 접속 주소입니다.
+
 ## Communication Flow
 
 ### Backend to RDS
