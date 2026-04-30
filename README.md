@@ -33,6 +33,8 @@ AWS
 ```
 
 ## Current Deployment Architecture
+<img width="1200" height="760" alt="image" src="https://github.com/user-attachments/assets/d9614ee2-8eee-4efc-801b-48d333b72a1c" />
+
 
 ```text
 Users
