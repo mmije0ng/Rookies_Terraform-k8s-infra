@@ -68,32 +68,33 @@ EKS Node Group
 
 ```mermaid
 flowchart TB
-    user[Users] -->|HTTP/HTTPS| lb[AWS Load Balancer]
-    lb --> svc[Kubernetes Service / Ingress]
-    svc --> fe[Frontend Pod]
-    svc --> be[Backend Pod]
+    users[Users] -->|HTTP/HTTPS| lb[AWS Load Balancer]
+    lb --> svc[Kubernetes Service or Ingress]
+    svc --> frontend[Frontend Pod]
+    svc --> backend[Backend Pod]
 
-    fe -->|API request| be
-    be -->|MySQL 3306| rds[(RDS MySQL)]
-    be -->|S3 API via IRSA| s3[(S3 Bucket)]
+    frontend -->|API request| backend
+    backend -->|MySQL 3306| rds[(RDS MySQL)]
+    backend -->|S3 API via IRSA| s3[(S3 Bucket)]
 
     ci[Developer / CI] -->|docker build / push| ecr[(ECR)]
     ecr -->|image pull| node[EKS Node Group]
-    node --> fe
-    node --> be
+    node --> frontend
+    node --> backend
+    node -->|outbound internet| nat
 
-    subgraph aws[AWS]
-        subgraph vpc[VPC 10.0.0.0/16]
-            subgraph public[Public Subnets 10.0.1.0/24, 10.0.2.0/24]
+    subgraph aws["AWS"]
+        subgraph vpc["VPC 10.0.0.0/16"]
+            subgraph public_subnets["Public Subnets"]
                 lb
                 nat[NAT Gateway]
                 igw[Internet Gateway]
             end
 
-            subgraph private[Private Subnets 10.0.10.0/24, 10.0.20.0/24]
+            subgraph private_subnets["Private Subnets"]
                 node
-                fe
-                be
+                frontend
+                backend
                 rds
             end
         end
@@ -102,8 +103,7 @@ flowchart TB
         s3
     end
 
-    private -->|outbound internet| nat
-    public --> igw
+    nat --> igw
 ```
 
 ### AWS Network Layout
