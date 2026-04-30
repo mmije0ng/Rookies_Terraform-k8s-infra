@@ -1,4 +1,4 @@
-# Terraform AWS Infrastructure
+# AWS EKS Infrastructure Automation with Terraform & Kubernetes
 
 이 프로젝트는 Terraform으로 AWS 인프라를 자동 구성하고, EKS 기반 애플리케이션 실행 환경을 생성하는 프로젝트입니다.
 
