@@ -33,7 +33,7 @@ AWS
 ```
 
 ## Current Deployment Architecture
-<img width="1200" height="760" alt="image" src="https://github.com/user-attachments/assets/d9614ee2-8eee-4efc-801b-48d333b72a1c" />
+<img width="1500" height="1160" alt="image" src="https://github.com/user-attachments/assets/8a74258f-0771-4970-99c9-65ff97c9d086" />
 
 
 ```text
