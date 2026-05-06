@@ -32,8 +32,10 @@ Terraform 구성 파일, `.terraform` 디렉터리, state 파일을 제외하면
 │   └── frontend-application.yml
 │       └── 프론트엔드 GitOps 저장소를 바라보는 ArgoCD Application manifest
 ├── scripts/
-│   └── configure-backend-irsa.ps1
-│       └── backend ServiceAccount에 IRSA role annotation을 적용하고 Pod를 재시작
+│   ├── configure-backend-irsa.ps1
+│   │   └── Windows PowerShell용 IRSA 설정 스크립트
+│   └── configure-backend-irsa.sh
+│       └── Ubuntu/Linux Bash용 IRSA 설정 스크립트
 └── .gitignore
     └── Terraform state, provider cache, 로컬 생성 파일 제외 규칙
 ```
@@ -336,8 +338,23 @@ IAM Role: sample-app-backend-sa-role
 
 Terraform apply 후 ServiceAccount annotation을 적용하고 backend Pod를 재시작합니다.
 
+PowerShell:
+
 ```powershell
 .\scripts\configure-backend-irsa.ps1
+```
+
+Bash Ubuntu/Linux:
+
+```bash
+chmod +x scripts/configure-backend-irsa.sh
+./scripts/configure-backend-irsa.sh
+```
+
+환경이 다르면 변수로 값을 바꿔 실행할 수 있습니다.
+
+```bash
+CLUSTER_NAME=sample-app-eks REGION=us-west-1 NAMESPACE=sample-app SERVICE_ACCOUNT=backend-sa DEPLOYMENT=backend ./scripts/configure-backend-irsa.sh
 ```
 
 직접 실행하려면 다음 명령을 사용합니다.
