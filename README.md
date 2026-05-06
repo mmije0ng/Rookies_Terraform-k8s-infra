@@ -27,7 +27,7 @@ Terraform으로 AWS 인프라를 구성하고, EKS 위에 프론트엔드와 백
 │   └── DEPLOY.md
 │       └── 단계별 배포 절차와 확인 명령어
 ├── argocd/
-│   ├── sample-application.yml
+│   ├── backend-application.yml
 │   │   └── 백엔드 GitOps 저장소를 바라보는 ArgoCD Application manifest
 │   └── frontend-application.yml
 │       └── 프론트엔드 GitOps 저장소를 바라보는 ArgoCD Application manifest
@@ -250,7 +250,7 @@ cd ..
 ArgoCD Application manifest를 적용하면 GitOps 저장소의 Kubernetes manifest가 EKS에 동기화됩니다.
 
 ```powershell
-kubectl apply -f argocd/sample-application.yml
+kubectl apply -f argocd/backend-application.yml
 kubectl apply -f argocd/frontend-application.yml
 ```
 
