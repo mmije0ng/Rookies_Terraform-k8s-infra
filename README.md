@@ -15,8 +15,31 @@ Terraform으로 AWS 인프라를 구성하고, EKS 위에 프론트엔드와 백
 5. 프론트엔드 Pod의 Nginx가 React dist 파일을 제공하고, API 요청은 백엔드 서비스로 전달합니다.
 6. 백엔드는 RDS MySQL과 S3 bucket에 접근합니다. S3 접근은 IRSA를 사용합니다.
 
+## Project Structure
+
+Terraform 구성 파일, `.terraform` 디렉터리, state 파일을 제외하면 저장소 구조는 다음과 같습니다.
+
+```text
+.
+├── README.md
+│   └── 인프라 구조, 배포 흐름, 운영 명령어를 정리한 메인 문서
+├── docs/
+│   └── DEPLOY.md
+│       └── 단계별 배포 절차와 확인 명령어
+├── argocd/
+│   ├── sample-application.yml
+│   │   └── 백엔드 GitOps 저장소를 바라보는 ArgoCD Application manifest
+│   └── frontend-application.yml
+│       └── 프론트엔드 GitOps 저장소를 바라보는 ArgoCD Application manifest
+├── scripts/
+│   └── configure-backend-irsa.ps1
+│       └── backend ServiceAccount에 IRSA role annotation을 적용하고 Pod를 재시작
+└── .gitignore
+    └── Terraform state, provider cache, 로컬 생성 파일 제외 규칙
+```
+
 ## Architecture
-<img width="1060" height="589" alt="image" src="https://github.com/user-attachments/assets/53334201-36a0-40d2-9c4a-add8e9ec890a" />
+<img width="887" height="534" alt="image" src="https://github.com/user-attachments/assets/2c166e3d-8efb-4da5-8157-0aaf04971175" />
 
 ```mermaid
 flowchart TB
@@ -204,8 +227,8 @@ terraform output -raw kubeconfig_command
 ArgoCD Application manifest를 적용하면 GitOps 저장소의 Kubernetes manifest가 EKS에 동기화됩니다.
 
 ```powershell
-kubectl apply -f sample-application.yml
-kubectl apply -f frontend-application.yml
+kubectl apply -f argocd/sample-application.yml
+kubectl apply -f argocd/frontend-application.yml
 ```
 
 상태 확인:

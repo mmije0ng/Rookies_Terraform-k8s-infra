@@ -313,7 +313,7 @@ terraform destroy
 | 2 | `sample-app/back/.github/workflows/deploy-eks.yml` | `AWS_REGION` |
 | 3 | `sample-app/front/.github/workflows/deploy-eks.yml` | `AWS_REGION` |
 | 4 | `sample-app/back/src/main/resources/application.yml` | `cloud.aws.region` |
-| 5 | `DEPLOY.md` | 문서 내 리전 문자열 (선택) |
+| 5 | `docs/DEPLOY.md` | 문서 내 리전 문자열 (선택) |
 
 ---
 
