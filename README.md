@@ -390,6 +390,33 @@ Password: 위 명령어로 추출한 초기 비밀번호
 kubectl -n argocd delete secret argocd-initial-admin-secret
 ```
 
+### GitHub Webhook
+
+ArgoCD는 webhook 없이도 Git repo를 주기적으로 polling하지만, GitHub Actions가 infra repo의 manifest를 push한 직후 바로 감지하려면 infra repo에 GitHub Webhook을 추가합니다.
+
+Webhook은 서비스 repo가 아니라 이 infra repo에 설정합니다.
+
+```text
+Repository: Rookies_Terraform-k8s-infra
+Payload URL: https://<argocd-server-url>/api/webhook
+Content type: application/json
+Secret: 비워둠
+Events: Just the push event
+SSL verification: Disable
+```
+
+`<argocd-server-url>`은 다음 명령으로 확인한 `argocd-server` LoadBalancer 주소입니다.
+
+```powershell
+kubectl get svc argocd-server -n argocd
+```
+
+ArgoCD 기본 HTTPS 인증서는 self-signed일 수 있으므로 GitHub Webhook의 SSL verification을 `Disable`로 설정합니다. 정상 인증서를 ArgoCD에 적용한 뒤에는 `Enable`로 바꿀 수 있습니다.
+
+동작 확인은 GitHub Webhook의 `Recent Deliveries`에서 `push` 이벤트가 `200`으로 성공하는지 확인합니다.
+
+Webhook은 infra repo의 모든 push 이벤트를 ArgoCD에 알려줍니다. 다만 ArgoCD Application은 `manifests/backend`, `manifests/frontend` 경로만 보고 있으므로 `README.md` 같은 문서만 변경된 commit은 refresh는 유발하지만 실제 Kubernetes 리소스 sync 변경은 발생하지 않습니다.
+
 ## AWS Load Balancer Controller
 
 HTTPS Ingress를 사용하려면 EKS에 AWS Load Balancer Controller가 필요합니다. 이 프로젝트는 Terraform에서 다음 항목을 생성하도록 구성되어 있습니다.
