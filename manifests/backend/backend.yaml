@@ -15,7 +15,7 @@ type: Opaque
 stringData:
   DB_URL: "jdbc:mysql://sample-app-mysql.clok8o4a6z4y.us-west-1.rds.amazonaws.com:3306/mydb?serverTimezone=Asia/Seoul&characterEncoding=UTF-8"
   DB_USERNAME: "admin"
-  DB_PASSWORD: "Madp0116"
+  DB_PASSWORD: "NewPassword123!"
   S3_BUCKET_NAME: "sample-app-dev-files-079000478222-mj"
 ---
 apiVersion: apps/v1
