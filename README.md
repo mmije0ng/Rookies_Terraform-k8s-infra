@@ -16,7 +16,7 @@ Terraform으로 AWS 인프라를 구성하고, EKS 위에 프론트엔드와 백
 6. 백엔드는 RDS MySQL과 S3 bucket에 접근합니다. S3 접근은 IRSA를 사용합니다.
 
 ## Architecture
-<img width="1598" height="872" alt="image" src="https://github.com/user-attachments/assets/dbfa732b-7763-402a-9e08-15cba8fd4924" />
+<img width="1060" height="589" alt="image" src="https://github.com/user-attachments/assets/53334201-36a0-40d2-9c4a-add8e9ec890a" />
 
 ```mermaid
 flowchart TB
