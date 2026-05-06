@@ -56,6 +56,7 @@ Terraform으로 AWS 인프라를 구성하고, EKS 위에 프론트엔드와 백
 │   ├── vpc.tf
 │   ├── eks.tf
 │   ├── ecr.tf
+│   ├── aws-load-balancer-controller.tf
 │   ├── rds.tf
 │   ├── s3.tf
 │   ├── variables.tf
@@ -215,6 +216,7 @@ flowchart LR
 | --- | --- |
 | Network | VPC, public/private subnets, internet gateway, NAT gateway, route tables |
 | Compute | EKS cluster, managed node group |
+| Ingress | AWS Load Balancer Controller |
 | Registry | ECR repositories for backend and frontend |
 | Database | RDS MySQL |
 | Storage | S3 bucket, S3 Gateway VPC Endpoint |
@@ -233,6 +235,7 @@ flowchart LR
 | `kubernetes_version` | `1.32` |
 | `kubernetes_namespace` | `sample-app` |
 | `backend_service_account_name` | `backend-sa` |
+| `aws_load_balancer_controller_chart_version` | `1.14.0` |
 | `node_instance_type` | `t3.medium` |
 | `node_desired_size` | `2` |
 | `node_min_size` | `1` |
@@ -379,6 +382,72 @@ Password: 위 명령어로 추출한 초기 비밀번호
 
 ```powershell
 kubectl -n argocd delete secret argocd-initial-admin-secret
+```
+
+## AWS Load Balancer Controller
+
+HTTPS Ingress를 사용하려면 EKS에 AWS Load Balancer Controller가 필요합니다. 이 프로젝트는 Terraform에서 다음 항목을 생성하도록 구성되어 있습니다.
+
+- AWS Load Balancer Controller IAM policy
+- `kube-system/aws-load-balancer-controller` ServiceAccount
+- ServiceAccount용 IRSA IAM role
+- Helm chart `eks/aws-load-balancer-controller`
+
+Terraform 적용:
+
+```powershell
+cd terraform
+terraform init
+terraform apply -var="db_password=<db-password>"
+cd ..
+```
+
+설치 확인:
+
+```powershell
+kubectl get deployment -n kube-system aws-load-balancer-controller
+kubectl get pods -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller
+```
+
+수동으로 설치해야 하는 경우에는 다음 흐름을 사용합니다.
+
+```powershell
+cd terraform
+$clusterName = terraform output -raw eks_cluster_name
+$vpcId = terraform output -raw vpc_id
+$accountId = aws sts get-caller-identity --query Account --output text
+
+Invoke-WebRequest `
+  -Uri https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.14.1/docs/install/iam_policy.json `
+  -OutFile iam_policy.json
+
+aws iam create-policy `
+  --policy-name AWSLoadBalancerControllerIAMPolicy `
+  --policy-document file://iam_policy.json
+
+eksctl create iamserviceaccount `
+  --cluster $clusterName `
+  --namespace kube-system `
+  --name aws-load-balancer-controller `
+  --role-name AmazonEKSLoadBalancerControllerRole `
+  --attach-policy-arn "arn:aws:iam::$accountId:policy/AWSLoadBalancerControllerIAMPolicy" `
+  --override-existing-serviceaccounts `
+  --region us-west-1 `
+  --approve
+
+helm repo add eks https://aws.github.io/eks-charts
+helm repo update eks
+
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller `
+  -n kube-system `
+  --set clusterName=$clusterName `
+  --set serviceAccount.create=false `
+  --set serviceAccount.name=aws-load-balancer-controller `
+  --set region=us-west-1 `
+  --set vpcId=$vpcId `
+  --version 1.14.0
+
+cd ..
 ```
 
 ## Backend Configuration

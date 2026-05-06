@@ -61,6 +61,13 @@ variable "backend_service_account_name" {
   type        = string
   default     = "backend-sa"
 }
+
+variable "aws_load_balancer_controller_chart_version" {
+  description = "AWS Load Balancer Controller Helm chart version"
+  type        = string
+  default     = "1.14.0"
+}
+
 variable "node_instance_type" {
   description = "워커 노드 EC2 인스턴스 타입"
   type        = string

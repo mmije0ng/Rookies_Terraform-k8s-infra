@@ -91,3 +91,13 @@ output "s3_vpc_endpoint_id" {
   description = "S3 Gateway VPC endpoint ID for private subnet access"
   value       = aws_vpc_endpoint.s3.id
 }
+
+output "aws_load_balancer_controller_role_arn" {
+  description = "AWS Load Balancer Controller ServiceAccount IAM role ARN"
+  value       = aws_iam_role.aws_load_balancer_controller.arn
+}
+
+output "aws_load_balancer_controller_check_command" {
+  description = "Command to verify AWS Load Balancer Controller deployment"
+  value       = "kubectl get deployment -n kube-system aws-load-balancer-controller"
+}
