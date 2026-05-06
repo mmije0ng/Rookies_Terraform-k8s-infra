@@ -49,8 +49,10 @@ Terraform으로 AWS 인프라를 구성하고, EKS 위에 프론트엔드와 백
 │   │   └── backend.yaml
 │   │       └── backend ServiceAccount, Secret, Deployment, Service
 │   └── frontend/
-│       └── frontend.yaml
-│           └── frontend Deployment, LoadBalancer Service
+│       ├── frontend.yaml
+│       │   └── frontend Deployment, ClusterIP Service
+│       └── ingress.yaml
+│           └── ACM 인증서와 ALB Ingress를 사용한 HTTPS 진입점
 ├── terraform/
 │   ├── main.tf
 │   ├── vpc.tf
@@ -89,7 +91,7 @@ flowchart TB
                 pub1["Public Subnet 1<br/>10.0.1.0/24<br/>us-west-1b"]
                 pub2["Public Subnet 2<br/>10.0.2.0/24<br/>us-west-1c"]
                 nat["NAT Gateway"]
-                lb["AWS Load Balancer<br/>Frontend Service / Ingress"]
+                lb["AWS ALB<br/>Frontend HTTPS Ingress"]
             end
 
             subgraph privateSubnets["Private Subnets"]
@@ -121,7 +123,7 @@ flowchart TB
         role["backend-sa IAM Role"]
     end
 
-    users -->|"HTTP/HTTPS"| lb
+    users -->|"HTTPS 443<br/>mijeong-rookies5-practice.store"| lb
     lb --> svc
     svc --> nginx
     nginx -->|"API proxy / request"| besvc
@@ -316,14 +318,18 @@ kubectl describe application aws-eks-backend -n argocd
 kubectl describe application aws-eks-frontend -n argocd
 ```
 
-서비스 주소 확인:
+서비스와 Ingress 주소 확인:
 
 ```powershell
-kubectl get svc -A
-kubectl get ingress -A
+kubectl get svc -n sample-app
+kubectl get ingress -n sample-app
 ```
 
-`TYPE=LoadBalancer` 서비스의 `EXTERNAL-IP` 또는 Ingress의 `ADDRESS`가 브라우저 접속 주소입니다.
+현재 프론트엔드는 `frontend-service`를 `ClusterIP`로 두고, `frontend-ingress`가 AWS ALB를 생성해 외부 HTTPS 트래픽을 받습니다. 브라우저 접속 주소는 Route 53에서 ALB로 연결한 도메인입니다.
+
+```text
+https://mijeong-rookies5-practice.store
+```
 
 ## ArgoCD
 
@@ -448,6 +454,55 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller `
   --version 1.14.0
 
 cd ..
+```
+
+## HTTPS Frontend Access
+
+프론트엔드 HTTPS는 `manifests/frontend/ingress.yaml`에서 관리합니다.
+
+```text
+User Browser
+  -> HTTPS 443
+  -> Route 53 mijeong-rookies5-practice.store
+  -> AWS ALB created by frontend-ingress
+  -> frontend-service ClusterIP:80
+  -> frontend Pod Nginx:80
+```
+
+현재 설정:
+
+| Item | Value |
+| --- | --- |
+| Domain | `mijeong-rookies5-practice.store` |
+| Kubernetes Ingress | `frontend-ingress` |
+| Kubernetes Service | `frontend-service` |
+| Service type | `ClusterIP` |
+| Listener | HTTP 80, HTTPS 443 |
+| TLS certificate | ACM certificate ARN in `manifests/frontend/ingress.yaml` |
+| HTTP redirect | `alb.ingress.kubernetes.io/ssl-redirect: "443"` |
+
+Ingress 확인:
+
+```powershell
+kubectl get ingress frontend-ingress -n sample-app
+kubectl describe ingress frontend-ingress -n sample-app
+```
+
+ALB DNS는 `kubectl get ingress`의 `ADDRESS`에 표시됩니다. Route 53에는 루트 도메인 A Alias 레코드로 이 ALB를 연결합니다.
+
+```text
+Record name: 비워둠
+Record type: A
+Alias: Yes
+Routing target: Application and Classic Load Balancer
+Region: us-west-1
+Load balancer: frontend-ingress가 생성한 ALB
+```
+
+현재 Ingress rule이 `host: mijeong-rookies5-practice.store`로 제한되어 있으므로 ALB DNS로 직접 접속하면 404가 나올 수 있습니다. 정상 접속 주소는 도메인입니다.
+
+```text
+https://mijeong-rookies5-practice.store
 ```
 
 ## Backend Configuration
