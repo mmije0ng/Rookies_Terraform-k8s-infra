@@ -17,7 +17,7 @@ Terraform으로 AWS 인프라를 구성하고, EKS 위에 프론트엔드와 백
 
 ## Project Structure
 
-Terraform 구성 파일, `.terraform` 디렉터리, state 파일을 제외하면 저장소 구조는 다음과 같습니다.
+루트에는 문서, 스크립트, ArgoCD manifest를 두고 Terraform 코드는 `terraform/` 폴더에 모았습니다.
 
 ```text
 .
@@ -31,6 +31,15 @@ Terraform 구성 파일, `.terraform` 디렉터리, state 파일을 제외하면
 │   │   └── 백엔드 GitOps 저장소를 바라보는 ArgoCD Application manifest
 │   └── frontend-application.yml
 │       └── 프론트엔드 GitOps 저장소를 바라보는 ArgoCD Application manifest
+├── terraform/
+│   ├── main.tf
+│   ├── vpc.tf
+│   ├── eks.tf
+│   ├── ecr.tf
+│   ├── rds.tf
+│   ├── s3.tf
+│   ├── variables.tf
+│   └── outputs.tf
 ├── scripts/
 │   ├── configure-backend-irsa.ps1
 │   │   └── Windows PowerShell용 IRSA 설정 스크립트
@@ -185,6 +194,12 @@ flowchart TB
 
 ## Provisioning
 
+Terraform 명령어는 `terraform/` 폴더 안에서 실행합니다.
+
+```powershell
+cd terraform
+```
+
 ### 1. Terraform 초기화
 
 ```powershell
@@ -222,6 +237,12 @@ aws eks update-kubeconfig --region us-west-1 --name sample-app-eks
 
 ```powershell
 terraform output -raw kubeconfig_command
+```
+
+작업을 마친 뒤 루트로 돌아오면 ArgoCD manifest와 scripts 경로를 그대로 사용할 수 있습니다.
+
+```powershell
+cd ..
 ```
 
 ## Application Deployment
@@ -354,7 +375,7 @@ chmod +x scripts/configure-backend-irsa.sh
 환경이 다르면 변수로 값을 바꿔 실행할 수 있습니다.
 
 ```bash
-CLUSTER_NAME=sample-app-eks REGION=us-west-1 NAMESPACE=sample-app SERVICE_ACCOUNT=backend-sa DEPLOYMENT=backend ./scripts/configure-backend-irsa.sh
+CLUSTER_NAME=sample-app-eks REGION=us-west-1 NAMESPACE=sample-app SERVICE_ACCOUNT=backend-sa DEPLOYMENT=backend TERRAFORM_DIR=terraform ./scripts/configure-backend-irsa.sh
 ```
 
 직접 실행하려면 다음 명령을 사용합니다.

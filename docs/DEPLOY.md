@@ -67,7 +67,7 @@ aws sts get-caller-identity
 ## Phase 2. Terraform으로 AWS 인프라 전체 생성 (로컬 PC, 최초 1회)
 
 ```bash
-cd 03_exmplecode/terraform
+cd terraform
 
 # terraform.tfvars 생성
 cp terraform.tfvars.example terraform.tfvars
@@ -128,7 +128,7 @@ terraform output -raw s3_bucket_name      # S3_BUCKET_NAME 값 그대로 사용
 
 ```bash
 # ── infra 레포 ──────────────────────────────────────
-cd 03_exmplecode/terraform
+cd terraform
 git init
 git add .
 git commit -m "init: terraform EKS infra"
@@ -161,7 +161,7 @@ git push -u origin main
 Secrets에 입력할 값을 먼저 확인합니다.
 
 ```bash
-cd 03_exmplecode/terraform
+cd terraform
 
 terraform output -raw eks_cluster_name
 terraform output -raw ecr_backend_repository_url
@@ -195,7 +195,7 @@ terraform output -raw s3_bucket_name
 ## Phase 4. kubectl 로컬 설정 (로컬 PC, 최초 1회)
 
 ```bash
-cd 03_exmplecode/terraform
+cd terraform
 
 aws eks update-kubeconfig \
   --region ap-northeast-2 \
@@ -295,7 +295,7 @@ kubectl rollout undo deployment/frontend -n sample-app
 kubectl delete namespace sample-app
 
 # 2. AWS 인프라 삭제
-cd 03_exmplecode/terraform
+cd terraform
 terraform destroy
 ```
 

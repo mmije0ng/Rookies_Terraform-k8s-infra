@@ -3,13 +3,19 @@ param(
   [string]$Region = "us-west-1",
   [string]$Namespace = "sample-app",
   [string]$ServiceAccount = "backend-sa",
-  [string]$Deployment = "backend"
+  [string]$Deployment = "backend",
+  [string]$TerraformDir = ""
 )
 
 $ErrorActionPreference = "Stop"
 
-$roleArn = terraform output -raw backend_sa_role_arn
-$bucketName = terraform output -raw s3_bucket_name
+if ([string]::IsNullOrWhiteSpace($TerraformDir)) {
+  $RepoRoot = Split-Path -Parent $PSScriptRoot
+  $TerraformDir = Join-Path $RepoRoot "terraform"
+}
+
+$roleArn = terraform -chdir="$TerraformDir" output -raw backend_sa_role_arn
+$bucketName = terraform -chdir="$TerraformDir" output -raw s3_bucket_name
 
 Write-Host "Backend IRSA role: $roleArn"
 Write-Host "Private S3 bucket: $bucketName"
