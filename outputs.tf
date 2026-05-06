@@ -43,6 +43,20 @@ output "backend_sa_role_arn" {
   value       = aws_iam_role.backend_sa.arn
 }
 
+output "backend_service_account_name" {
+  description = "Backend Kubernetes ServiceAccount name"
+  value       = var.backend_service_account_name
+}
+
+output "kubernetes_namespace" {
+  description = "Application Kubernetes namespace"
+  value       = var.kubernetes_namespace
+}
+
+output "backend_irsa_annotation_command" {
+  description = "PowerShell command to annotate the backend ServiceAccount with the IRSA role"
+  value       = "kubectl annotate serviceaccount ${var.backend_service_account_name} -n ${var.kubernetes_namespace} eks.amazonaws.com/role-arn=${aws_iam_role.backend_sa.arn} --overwrite"
+}
 output "ecr_backend_repository_url" {
   description = "백엔드 ECR 리포지토리 URL"
   value       = aws_ecr_repository.backend.repository_url
@@ -71,4 +85,9 @@ output "rds_db_url" {
 output "s3_bucket_name" {
   description = "S3 버킷 이름 (S3_BUCKET_NAME 환경변수 값)"
   value       = aws_s3_bucket.app.bucket
+}
+
+output "s3_vpc_endpoint_id" {
+  description = "S3 Gateway VPC endpoint ID for private subnet access"
+  value       = aws_vpc_endpoint.s3.id
 }

@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: awseks-frontend
+  namespace: argocd
+spec:
+  project: default
+  source:
+    # 프론트엔드 GitHub 리포지토리 주소
+    repoURL: 'https://github.com/mmije0ng/Rookies_Terraform-k8s-FE'
+    targetRevision: HEAD
+    # 리포지토리 내의 매니페스트 파일 경로 (루트 폴더일 경우 '.')
+    path: 'k8s'
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

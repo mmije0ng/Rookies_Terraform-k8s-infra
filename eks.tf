@@ -32,8 +32,8 @@ resource "aws_eks_cluster" "main" {
 
   vpc_config {
     subnet_ids              = concat(aws_subnet.public[*].id, aws_subnet.private[*].id)
-    endpoint_private_access = true  # VPC 내부에서 API 서버 접근 허용
-    endpoint_public_access  = true  # kubectl 로컬 사용을 위해 퍼블릭도 허용
+    endpoint_private_access = true # VPC 내부에서 API 서버 접근 허용
+    endpoint_public_access  = true # kubectl 로컬 사용을 위해 퍼블릭도 허용
   }
 
   depends_on = [aws_iam_role_policy_attachment.eks_cluster_policy]
@@ -76,7 +76,7 @@ resource "aws_iam_role" "backend_sa" {
       Action = "sts:AssumeRoleWithWebIdentity"
       Condition = {
         StringEquals = {
-          "${local.oidc_issuer}:sub" = "system:serviceaccount:sample-app:backend-sa"
+          "${local.oidc_issuer}:sub" = "system:serviceaccount:${var.kubernetes_namespace}:${var.backend_service_account_name}"
           "${local.oidc_issuer}:aud" = "sts.amazonaws.com"
         }
       }
@@ -90,16 +90,30 @@ resource "aws_iam_role_policy" "backend_s3" {
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-      Action = [
-        "s3:GetObject",
-        "s3:PutObject",
-        "s3:DeleteObject",
-        "s3:ListBucket"
-      ]
-      Resource = ["*"] # 실제 운영 환경에서는 특정 버킷 ARN으로 제한 권장
-    }]
+    Statement = [
+      {
+        Sid    = "BucketRead"
+        Effect = "Allow"
+        Action = [
+          "s3:GetBucketLocation",
+          "s3:ListBucket",
+          "s3:ListBucketMultipartUploads"
+        ]
+        Resource = aws_s3_bucket.app.arn
+      },
+      {
+        Sid    = "ObjectReadWrite"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject",
+          "s3:AbortMultipartUpload",
+          "s3:ListMultipartUploadParts"
+        ]
+        Resource = "${aws_s3_bucket.app.arn}/*"
+      }
+    ]
   })
 }
 

@@ -50,6 +50,17 @@ variable "kubernetes_version" {
   default     = "1.32"
 }
 
+variable "kubernetes_namespace" {
+  description = "Kubernetes namespace for the application"
+  type        = string
+  default     = "sample-app"
+}
+
+variable "backend_service_account_name" {
+  description = "Kubernetes ServiceAccount name used by the backend Pod"
+  type        = string
+  default     = "backend-sa"
+}
 variable "node_instance_type" {
   description = "워커 노드 EC2 인스턴스 타입"
   type        = string
