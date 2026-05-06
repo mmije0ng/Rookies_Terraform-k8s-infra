@@ -41,7 +41,7 @@ spec:
       serviceAccountName: backend-sa
       containers:
         - name: backend
-          image: 
+          image: 079000478222.dkr.ecr.us-west-1.amazonaws.com/sample-app/backend:cbe0244c7c5616905a00e4aa0ca3c84cc72046c1
           ports:
             - containerPort: 8080
           env:
