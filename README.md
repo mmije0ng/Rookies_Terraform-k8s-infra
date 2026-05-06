@@ -6,18 +6,30 @@ Terraform으로 AWS 인프라를 구성하고, EKS 위에 프론트엔드와 백
 
 ## Overview
 
-이 프로젝트는 다음 흐름으로 동작합니다.
+이 저장소는 인프라와 Kubernetes 배포 상태를 관리하는 infra repo입니다. 프론트엔드/백엔드 애플리케이션의 빌드 workflow는 각 서비스 repo에서 실행되고, 이 저장소의 `manifests/` 파일만 갱신합니다.
 
 1. Terraform으로 AWS 인프라를 생성합니다.
-2. GitHub Actions가 프론트엔드/백엔드 Docker 이미지를 빌드하고 ECR에 push합니다.
-3. ArgoCD가 GitOps 저장소의 Kubernetes manifest를 감시하고 EKS에 동기화합니다.
-4. 사용자는 AWS Load Balancer를 통해 프론트엔드에 접속합니다.
-5. 프론트엔드 Pod의 Nginx가 React dist 파일을 제공하고, API 요청은 백엔드 서비스로 전달합니다.
-6. 백엔드는 RDS MySQL과 S3 bucket에 접근합니다. S3 접근은 IRSA를 사용합니다.
+2. Backend service repo의 GitHub Actions가 백엔드 Docker 이미지를 빌드하고 ECR에 push합니다.
+3. Frontend service repo의 GitHub Actions가 프론트엔드 Docker 이미지를 빌드하고 ECR에 push합니다.
+4. 각 서비스 repo의 workflow가 이 infra repo를 checkout해서 `manifests/backend` 또는 `manifests/frontend`의 image tag를 갱신하고 push합니다.
+5. ArgoCD가 이 infra repo의 `manifests/` 경로를 감시하고 EKS에 동기화합니다.
+6. 사용자는 AWS Load Balancer를 통해 프론트엔드에 접속합니다.
+7. 프론트엔드 Pod의 Nginx가 React dist 파일을 제공하고, API 요청은 백엔드 서비스로 전달합니다.
+8. 백엔드는 RDS MySQL과 S3 bucket에 접근합니다. S3 접근은 IRSA를 사용합니다.
+
+## Repository Roles
+
+| Repository | Role | GitHub Actions 실행 위치 |
+| --- | --- | --- |
+| Infra repo | Terraform, ArgoCD Application, Kubernetes manifests 관리 | Terraform 실행 및 manifest 변경 commit |
+| Backend service repo | Spring Boot backend build, Docker image push, backend manifest image 갱신 | Backend repo의 workflow에서 실행 |
+| Frontend service repo | React build, Docker image push, frontend manifest image 갱신 | Frontend repo의 workflow에서 실행 |
+
+서비스 repo의 workflow는 이 infra repo의 workflow를 실행하는 것이 아닙니다. 각 서비스 repo에서 빌드와 ECR push를 수행한 뒤, 이 infra repo의 manifest 파일을 수정해서 push합니다. ArgoCD는 infra repo 변경사항을 감지해 클러스터에 반영합니다.
 
 ## Project Structure
 
-루트에는 문서, 스크립트, ArgoCD manifest를 두고 Terraform 코드는 `terraform/` 폴더에 모았습니다.
+루트에는 문서, 스크립트, ArgoCD Application, Kubernetes manifest를 두고 Terraform 코드는 `terraform/` 폴더에 모았습니다.
 
 ```text
 .
@@ -28,9 +40,17 @@ Terraform으로 AWS 인프라를 구성하고, EKS 위에 프론트엔드와 백
 │       └── 단계별 배포 절차와 확인 명령어
 ├── argocd/
 │   ├── backend-application.yml
-│   │   └── 백엔드 GitOps 저장소를 바라보는 ArgoCD Application manifest
+│   │   └── manifests/backend 경로를 바라보는 ArgoCD Application
 │   └── frontend-application.yml
-│       └── 프론트엔드 GitOps 저장소를 바라보는 ArgoCD Application manifest
+│       └── manifests/frontend 경로를 바라보는 ArgoCD Application
+├── manifests/
+│   ├── backend/
+│   │   ├── namespace.yaml
+│   │   └── backend.yaml
+│   │       └── backend ServiceAccount, Secret, Deployment, Service
+│   └── frontend/
+│       └── frontend.yaml
+│           └── frontend Deployment, LoadBalancer Service
 ├── terraform/
 │   ├── main.tf
 │   ├── vpc.tf
@@ -133,6 +153,37 @@ flowchart TB
     nodes -->|"outbound traffic"| nat
     nat --> igw
 ```
+
+## CI/CD Flow
+
+Backend와 Frontend 배포 workflow는 각각의 서비스 repo에서 동작합니다. 이 infra repo는 workflow 실행 주체가 아니라, 서비스 repo workflow가 갱신하는 GitOps 상태 저장소입니다.
+
+```mermaid
+flowchart LR
+    backendRepo["Backend service repo"]
+    frontendRepo["Frontend service repo"]
+    backendActions["Backend GitHub Actions"]
+    frontendActions["Frontend GitHub Actions"]
+    ecr["Amazon ECR"]
+    infraRepo["Infra repo<br/>manifests/backend<br/>manifests/frontend"]
+    argocd["ArgoCD"]
+    eks["EKS<br/>sample-app namespace"]
+
+    backendRepo -->|"push main"| backendActions
+    frontendRepo -->|"push main"| frontendActions
+
+    backendActions -->|"build & push backend image"| ecr
+    frontendActions -->|"build & push frontend image"| ecr
+
+    backendActions -->|"update backend image tag"| infraRepo
+    frontendActions -->|"update frontend image tag"| infraRepo
+
+    argocd -->|"watch infra repo"| infraRepo
+    argocd -->|"sync manifests"| eks
+    eks -->|"pull images"| ecr
+```
+
+백엔드 코드 변경은 backend repo workflow에서 처리하고, 프론트 코드 변경은 frontend repo workflow에서 처리합니다. 두 workflow 모두 최종적으로 이 infra repo의 manifest image 값을 변경하며, ArgoCD는 그 변경사항을 클러스터에 적용합니다.
 
 ## Resource Layout
 
