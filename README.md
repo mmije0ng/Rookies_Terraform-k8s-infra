@@ -258,8 +258,8 @@ kubectl apply -f argocd/frontend-application.yml
 
 ```powershell
 kubectl get application -n argocd
-kubectl describe application awseks-backend -n argocd
-kubectl describe application awseks-frontend -n argocd
+kubectl describe application aws-eks-backend -n argocd
+kubectl describe application aws-eks-frontend -n argocd
 ```
 
 서비스 주소 확인:
