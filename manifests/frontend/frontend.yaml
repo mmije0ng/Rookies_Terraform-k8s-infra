@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: 079000478222.dkr.ecr.us-west-1.amazonaws.com/sample-app/frontend:ab31bad3433c715ae81aad68ce176bb22ea21a9c
+          image: 079000478222.dkr.ecr.us-west-1.amazonaws.com/sample-app/frontend:7ad0111ea0741b2adacd43c9ae4996c9db4eef68
           ports:
             - containerPort: 80
           readinessProbe:
